@@ -3,53 +3,77 @@ import debounce from 'lodash.debounce';
 
 import './css/styles.css';
 import getRefs from './get-refs';
-import FETCH from './fetch-countries';
 
-const DEBOUNCE_DELAY = 3000;
+import {fetchCountries} from './fetch-countries';
+// import {renderListOfCountries, renderOneCountry} from './render-info'
+// import RENDER from './render-info';
+// console.log(RENDER);
+// const { renderListOfCountries, renderOneCountry } = RENDER;
+
+const DEBOUNCE_DELAY = 300;
 
 const refs = getRefs();
-// console.log(refs);
 
 refs.input.addEventListener('input', debounce(onSearchCountry, DEBOUNCE_DELAY));
 
 function onSearchCountry(e) {
-    const name = e.target.value.trim();
-    
-    FETCH.fetchCountries(name)
-        .then(result => {
+    clearInfo();
+    const name = e.target.value.toLowerCase().trim();
+    if (!name) {
+        return;
+    };
 
-            // console.log(result.length)
+    fetchCountries(name)
+        .then(result => {
             if (result.length >= 2 && result.length <= 10) {
                 renderListOfCountries(result);
-                // console.log(result.Object.values(name))
+            
             } else if (result.length > 10) {
                 Notiflix.Notify.info("Too many matches found. Please enter a more specific name.");
+                clearInfo();
             } else if (result.length = 1) {
-                console.log(result)
+                // console.log(result)
                 renderOneCountry(result);
-            }
-    })
-    
-    
+            };
+        })
+        .catch(reject => {
+            Notiflix.Notify.failure('"Oops, there is no country with that name"');
+            clearInfo();
+        
+        });
     
 };
 
-
-function renderListOfCountries(countries) {
-    const markUp = countries.map(country =>
-        `<li><img src="${country.flags.svg}" alt="A flag" width="30"  />${country.name.official}</li>`).join('');
-    console.log(markUp);
+const renderListOfCountries = countries => {
+    const markUp = countries.map(({ flags, name }) =>
+        `<li class="country-list__item"> 
+        <img class="icon-img" src="${flags.svg}" alt="A flag" width="30"/>
+        ${name.official}</li>`
+    ).join('');
+    
     refs.countryList.innerHTML = markUp;
 };
 
-function renderOneCountry(country) {
-    console.log(country)
-    // const markUp =
-    //     `<h1>${country.name}</h1>
-    //   <ul>
-    //     <li><span class="item-title">Capital:</span>${country.capital}</li>
-    //     <li><span class="item-title">Population:</span>${country.population}</li>
-    //     <li><span class="item-title">Laguages:</span>${country.languages}</li>
-    //   </ul>`
-    // refs.countryInfo.innerHTML = markUp;
+const renderOneCountry = country => {
+    let countryObj = country[0];
+    // console.log(countryObj.name.official);
+    const { name, capital, population, languages, flags } = countryObj;
+   
+    const markUp =
+        `<h1><img class="icon-img" src="${flags.svg}" alt="A flag" width="30"/> ${name.official}</h1>
+      <ul class="country-info__list">
+        <li class="country-info__item"><span class="item-title">Capital: </span>${capital}</li>
+        <li class="country-info__item"><span class="item-title">Population: </span>${population}</li>
+        <li class="country-info__item"><span class="item-title">Laguages: </span>${addLanguagesList(languages)}</li>
+      </ul>`
+    refs.countryInfo.innerHTML = markUp;
+};
+
+
+const addLanguagesList = arr => Object.values(arr).join(', ');
+
+
+const clearInfo = () => {
+refs.countryInfo.innerHTML = '';
+    refs.countryList.innerHTML = '';
 }
